@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 
 export async function GET(request: Request) {
+  if (!prisma) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+  }
   const { searchParams } = new URL(request.url);
   const storeId = searchParams.get('storeId');
   
@@ -17,6 +20,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!prisma) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+  }
   try {
     const body = await request.json();
     const { storeId, customerId, items, total, paymentMethod, notes } = body;

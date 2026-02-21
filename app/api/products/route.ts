@@ -5,6 +5,10 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const storeId = searchParams.get('storeId');
   
+  if (!prisma) {
+    return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
+  }
+  
   try {
     const products = await prisma.product.findMany({
       where: storeId ? { storeId } : undefined,
