@@ -1,0 +1,1 @@
+Project overview with: - What is VIEWPORT STORE - Features list - Tech stack - Installation instructions - Environment variables needed - How to run locally

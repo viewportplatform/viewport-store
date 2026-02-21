@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  phone     String?
+  stores    Store[]
+  createdAt DateTime @default(now())
+
+  @@map("users")
+}
+
+model Store {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  slug        String     @unique
+  description String?
+  logo        String?
+  isActive    Boolean    @default(true)
+  products    Product[]
+  customers   Customer[]
+  orders      Order[]
+  sessions    WhatsAppSession[]
+  createdAt   DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("stores")
+  @@index([userId])
+  @@index([slug])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  storeId     String
+  name        String
+  description String?
+  price       Decimal
+  images      String[]
+  inventory   Int      @default(0)
+  category    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("products")
+  @@index([storeId])
+  @@index([category])
+  @@index([isActive])
+}
+
+model Customer {
+  id          String   @id @default(cuid())
+  storeId     String
+  phone       String
+  name        String?
+  email       String?
+  address     String?
+  ordersCount Int      @default(0)
+  orders      Order[]
+  sessions    WhatsAppSession[]
+  createdAt   DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@map("customers")
+  @@index([storeId])
+  @@index([phone])
+  @@unique([storeId, phone])
+}
+
+model Order {
+  id            String                     @id @default(cuid())
+  storeId       String
+  customerId    String
+  status        OrderStatus                @default(pending)
+  items         Json                       // Array of product items with quantity, price, etc.
+  total         Decimal
+  paymentStatus PaymentStatus              @default(pending)
+  paymentMethod PaymentMethod?
+  notes         String?
+  payments      Payment[]
+  createdAt     DateTime                   @default(now())
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("orders")
+  @@index([storeId])
+  @@index([customerId])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([createdAt])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  orderId         String
+  amount          Decimal
+  method          PaymentMethod
+  status          PaymentStatus @default(pending)
+  stripePaymentId String?
+  createdAt       DateTime      @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+  @@index([orderId])
+  @@index([stripePaymentId])
+  @@index([status])
+}
+
+model WhatsAppSession {
+  id            String   @id @default(cuid())
+  storeId       String
+  customerId    String
+  phoneNumber   String
+  lastMessageAt DateTime?
+  createdAt     DateTime @default(now())
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_sessions")
+  @@index([storeId])
+  @@index([customerId])
+  @@index([phoneNumber])
+  @@unique([storeId, customerId])
+}
+
+enum OrderStatus {
+  pending
+  confirmed
+  preparing
+  ready
+  delivered
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  processing
+  completed
+  failed
+  refunded
+}
+
+enum PaymentMethod {
+  cash
+  card
+  transfer
+  wallet
+}
